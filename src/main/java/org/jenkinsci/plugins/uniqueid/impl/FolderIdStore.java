@@ -65,6 +65,11 @@ public class FolderIdStore extends IdStore<Folder> {
             public String getDisplayName() {
                 return "Unique ID";
             }
+
+            @Override
+            public boolean isApplicable(Class<? extends Folder> containerType) {
+                return false;
+            }
         }
 
         /**
