@@ -5,6 +5,9 @@ import hudson.ExtensionPoint;
 import jenkins.model.Jenkins;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import javax.annotation.CheckForNull;
 
 import javax.annotation.Nullable;
 
@@ -22,7 +25,7 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
  * common for users top copy items either through the UI or manually and this will cause the
  * IDs to become non-unique.
  * 
- *
+ * 
  * @param <T>
  */
 @Restricted(NoExternalUse.class)
@@ -67,6 +70,23 @@ public abstract class LegacyIdStore<T> implements ExtensionPoint {
             }
         }
         return null;
+    }
+    
+    /**
+     * Retrieve all {@link LegacyIdStore}s for the given type.
+     * @param clazz Class
+     * @param <C> type of {@link LegacyIdStore}s
+     * @return A list of all matching {@link LegacyIdStore}s
+     */
+    @CheckForNull
+    public static <C> List<LegacyIdStore<C>> allForClass(Class<C> clazz) {
+        List<LegacyIdStore<C>> res = new LinkedList<LegacyIdStore<C>>();
+        for (LegacyIdStore store : Jenkins.getInstance().getExtensionList(LegacyIdStore.class)) {
+            if (store.supports(clazz)) {
+                res.add((LegacyIdStore<C>)store);
+            }
+        }
+        return res;
     }
 
     /**
