@@ -60,7 +60,8 @@ public class IdStoreMigratorV1ToV2Test {
         checkID(jobNoID.getBuildByNumber(1), null);
         checkID(jobNoID.getBuildByNumber(2), null);
         
-        checkID(jobWithID.getBuildByNumber(1), "ZGQxMDNhYzUtMTJlOC00YTc4LTgzOT_1"); // build 1 had no id so its generated on the fly from the parent
+        // build 1 had no id so its generated on the fly from the parent
+        checkID(jobWithID.getBuildByNumber(1), "ZGQxMDNhYzUtMTJlOC00YTc4LTgzOT_" + jobWithID.getBuildByNumber(1).getId()); 
         checkID(jobWithID.getBuildByNumber(2), "NGQ0ODM2NjktZGM0OS00MjdkLWE3NT");
     }
 

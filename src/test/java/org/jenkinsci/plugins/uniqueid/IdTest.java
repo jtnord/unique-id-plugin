@@ -25,7 +25,7 @@ public class IdTest {
 
         // a build will get an id computed from its parent.
         String buildId = IdStore.getId(build);
-        assertEquals(buildId, id+"_1");
+        assertEquals(buildId, id+'_'+build.getId());
 
         // should be a no-op
         IdStore.makeId(build);

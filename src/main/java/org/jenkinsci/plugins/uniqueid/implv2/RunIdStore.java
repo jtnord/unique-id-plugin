@@ -40,7 +40,7 @@ public class RunIdStore extends IdStore<Run> {
         Job parent = run.getParent();
         String parentID = IdStore.getId(parent);
         if (parentID != null) {
-            return parentID + '_' + run.getNumber();
+            return parentID + '_' + run.getId();
         }
         return null;
     }
