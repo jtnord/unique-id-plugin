@@ -32,7 +32,7 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
 public class IdStoreMigratorV1ToV2 {
     
     private static Logger LOGGER = Logger.getLogger(IdStoreMigratorV1ToV2.class.getName());
-
+    
     /**
      * Migrates any IDs stored in Folder/Job/Run configuration 
      * @throws IOException
@@ -44,7 +44,7 @@ public class IdStoreMigratorV1ToV2 {
         if (jenkins == null) {
             throw new IllegalStateException("Jenkins is null, so it is impossible to migrate the IDs");
         }
-        File marker = new File(jenkins.getRootDir(), "IdStoreMigration.txt");
+        File marker = new File(jenkins.getRootDir(), "unique-id-migration.txt");
         if (marker.exists()) {
             LOGGER.log(Level.INFO, "Migration of IDStore already perfomed, so skipping migration.");
             return;

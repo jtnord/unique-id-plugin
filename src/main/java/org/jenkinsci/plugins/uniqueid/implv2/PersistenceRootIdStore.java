@@ -24,7 +24,7 @@ public class PersistenceRootIdStore extends IdStore<PersistenceRoot> {
     private final static Logger LOGGER = Logger.getLogger(PersistenceRootIdStore.class.getName());
 
     /** The name of the file in which we store the unique ID. */
-    private final static String ID_FILE = "uniqueID.txt";
+    private final static String ID_FILE = "unique-id.txt";
 
     public PersistenceRootIdStore() {
         super(PersistenceRoot.class);
@@ -49,7 +49,7 @@ public class PersistenceRootIdStore extends IdStore<PersistenceRoot> {
             try {
                 return FileUtils.readFileToString(f, "UTF-8");
             } catch (IOException ex) {
-                LOGGER.log(Level.WARNING, "Failed to retreive unique ID for " + object.toString(), ex);
+                LOGGER.log(Level.WARNING, "Failed to retrieve unique ID for " + object.toString(), ex);
             }
         }
         return null;
