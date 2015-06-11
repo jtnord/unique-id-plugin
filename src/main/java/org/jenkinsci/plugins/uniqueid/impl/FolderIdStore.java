@@ -1,37 +1,47 @@
 package org.jenkinsci.plugins.uniqueid.impl;
 
-import com.cloudbees.hudson.plugins.folder.Folder;
-import com.cloudbees.hudson.plugins.folder.FolderProperty;
-import com.cloudbees.hudson.plugins.folder.FolderPropertyDescriptor;
 import hudson.Extension;
 import hudson.model.Action;
 import hudson.model.Actionable;
-import org.jenkinsci.plugins.uniqueid.IdStore;
+import hudson.util.DescribableList;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.logging.Level;
+import java.util.Iterator;
 import java.util.logging.Logger;
+
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
+
+import com.cloudbees.hudson.plugins.folder.FolderProperty;
+import com.cloudbees.hudson.plugins.folder.FolderPropertyDescriptor;
+import com.cloudbees.hudson.plugins.folder.Folder;
 
 /**
  * Stores ids for folders as a {@link FolderIdProperty}
+ * @deprecated {@see PersistenceRootIdStore}
  */
 @Extension(optional = true)
-public class FolderIdStore extends IdStore<Folder> {
+@Deprecated
+@Restricted(NoExternalUse.class)
+public class FolderIdStore extends LegacyIdStore<Folder> {
     public FolderIdStore() {
         super(Folder.class);
     }
 
     @Override
-    public void make(Folder folder) {
-        if (folder.getProperties().get(FolderIdProperty.class) == null) {
-            try {
-                folder.addProperty(new FolderIdProperty());
-            } catch (IOException e) {
-                LOGGER.log(Level.SEVERE, "Failed to add property",e);
+    public void remove(Folder folder) throws IOException {
+        DescribableList<FolderProperty<?>,FolderPropertyDescriptor> properties = folder.getProperties();
+
+        for (Iterator<FolderProperty<?>> itr = properties.iterator(); itr.hasNext(); ) {
+            FolderProperty<?> prop = itr.next();
+
+            if (prop instanceof FolderIdProperty) {
+                itr.remove();
             }
         }
+        folder.save();
     }
 
     @Override

@@ -1,18 +1,29 @@
 package org.jenkinsci.plugins.uniqueid.impl;
 
+import jenkins.model.RunAction2;
+
 import hudson.model.Action;
 import hudson.model.Actionable;
+import hudson.model.Run;
+
 import org.apache.commons.codec.binary.Base64;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 import javax.annotation.Nullable;
+
 import java.util.UUID;
 import java.util.logging.Logger;
 
 /**
- * An action which stores an id.
+ * DO NOT USE
+ * @deprecated users should not use this as it ties the ID explicitly to the item and as will not work when copying items (for example). 
  */
-class Id implements Action {
+@Deprecated
+@Restricted(NoExternalUse.class)
+class Id implements Action , RunAction2 {
 
+    private final static Logger LOGGER = Logger.getLogger(Id.class.getName());
 
     private final String id;
 
@@ -36,7 +47,13 @@ class Id implements Action {
         return id;
     }
 
+    
+    /**
+     * @deprecated Sub classes should not use this as it stores the ID in the actionable item.
+     * @return
+     */
     @Nullable
+    @Deprecated
     protected static String getId(Actionable actionable) {
         Id id = actionable.getAction(Id.class);
         if (id != null) {
@@ -47,5 +64,15 @@ class Id implements Action {
     }
 
 
-    private final static Logger LOGGER = Logger.getLogger(Id.class.getName());
+
+    public void onAttached(Run<?, ?> r) {
+        // NO-OP
+    }
+
+    /** 
+     * Migrates the run away from using this Action.
+     */
+    public void onLoad(Run<?, ?> r) {
+        IdStoreMigratorV1ToV2.migrate(r);
+    }
 }

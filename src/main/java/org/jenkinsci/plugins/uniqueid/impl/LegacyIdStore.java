@@ -1,16 +1,15 @@
-package org.jenkinsci.plugins.uniqueid;
+package org.jenkinsci.plugins.uniqueid.impl;
 
 import hudson.ExtensionPoint;
 
 import jenkins.model.Jenkins;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
+import java.io.IOException;
 
 import javax.annotation.Nullable;
 
-import org.apache.commons.codec.binary.Base64;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 /**
  * An abstraction to persistently store and retrieve unique id's
@@ -26,26 +25,26 @@ import org.apache.commons.codec.binary.Base64;
  *
  * @param <T>
  */
-public abstract class IdStore<T> implements ExtensionPoint {
+@Restricted(NoExternalUse.class)
+@Deprecated
+public abstract class LegacyIdStore<T> implements ExtensionPoint {
 
     private final Class<T> type;
 
-    public IdStore (Class<T> forType) {
+    public LegacyIdStore (Class<T> forType) {
         this.type = forType;
     }
 
     /**
-     * Creates an unique id for the given object.
-     * Subsequent calls are idempotent.
-     *
-     * @param object the object to make the id for.
+     * Remove the unique id associated with the given object.
+     * @param object
      */
-    public abstract void make(T object);
+    public abstract void remove(T object) throws IOException;
 
     /**
      * Get the id for this given object.
      * @param object
-     * @return the id or {@code null} if none assigned.
+     * @return the id or null if none assigned.
      */
     @Nullable
     public abstract String get(T object);
@@ -55,14 +54,14 @@ public abstract class IdStore<T> implements ExtensionPoint {
     }
 
     /**
-     * Retrieve an {@link IdStore} for the given type
+     * Retrieve an {@link LegacyIdStore} for the given type
      * @param clazz
      * @param <C>
      * @return the store which supports the type, or null if none
      */
     @Nullable
-    public static <C> IdStore<C> forClass(Class<C> clazz) {
-        for (IdStore store : Jenkins.getInstance().getExtensionList(IdStore.class)) {
+    public static <C> LegacyIdStore<C> forClass(Class<C> clazz) {
+        for (LegacyIdStore store : Jenkins.getInstance().getExtensionList(LegacyIdStore.class)) {
             if (store.supports(clazz)) {
                 return store;
             }
@@ -74,13 +73,14 @@ public abstract class IdStore<T> implements ExtensionPoint {
      * Convenience method which makes the id for the given object.
      *
      * @throws java.lang.IllegalArgumentException if the type is not supported.
+     * @throws IOException if we could not remove the ID from the Object.
      */
-    public static void makeId(Object object) throws IllegalArgumentException {
-        IdStore store = forClass(object.getClass());
+    public static void removeId(Object object) throws IOException{
+        LegacyIdStore store = forClass(object.getClass());
         if (store == null) {
             throw new IllegalArgumentException("Unsupported type: " + object.getClass().getName());
         } else {
-            store.make(object);
+            store.remove(object);
         }
     }
 
@@ -89,22 +89,13 @@ public abstract class IdStore<T> implements ExtensionPoint {
      *
      * @throws java.lang.IllegalArgumentException if the type is not supported.
      */
-    public static String getId(Object object) throws IllegalArgumentException {
-        IdStore store = forClass(object.getClass());
+    public static String getId(Object object) {
+        LegacyIdStore store = forClass(object.getClass());
         if (store == null) {
             throw new IllegalArgumentException("Unsupported type: " + object.getClass().getName());
         } else {
             return store.get(object);
         }
-    }
-
-    /**
-     * Generates a new unique ID.
-     * Subclasses do not need to use this to create unique IDs and are free to create IDs by other methods.
-     * @return a string that should be unique against all jenkins instances.
-     */
-    protected static String generateUniqueID() {
-        return Base64.encodeBase64String(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8)).substring(0, 30);
     }
 
 }
