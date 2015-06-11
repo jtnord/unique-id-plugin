@@ -6,7 +6,6 @@ import hudson.model.Actionable;
 import hudson.model.Job;
 import hudson.model.JobProperty;
 import hudson.model.JobPropertyDescriptor;
-import org.jenkinsci.plugins.uniqueid.IdStore;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -14,26 +13,31 @@ import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
+
 /**
  * Stores ids for jobs in {@link JobIdProperty}
+ * @deprecated {@see PersistenceRootIdStore}
  */
 @Extension
-public class JobIdStore extends IdStore<Job> {
+@Deprecated
+@Restricted(NoExternalUse.class)
+public class JobIdStore extends LegacyIdStore<Job> {
 
     public JobIdStore() {
         super(Job.class);
     }
 
     @Override
-    public void make(Job job) {
-        if (job.getProperty(JobIdProperty.class) == null) {
-            try {
-                job.addProperty(new JobIdProperty());
-            } catch (IOException e) {
-                LOGGER.log(Level.SEVERE, "Failed to add property",e);
-            }
+    public void remove(Job job) {
+        try {
+            while (job.removeProperty(JobIdProperty.class) != null) {}
+        } catch (IOException ex) {
+            LOGGER.log(Level.WARNING, "Failed to remove property from " + job.getFullName(), ex);
         }
     }
+    
     @Override
     public String get(Job thing) {
         return Id.getId((Actionable) thing);
@@ -43,6 +47,7 @@ public class JobIdStore extends IdStore<Job> {
     /**
      * A unique Id for Jobs.
      */
+    @Deprecated
     public static class JobIdProperty extends JobProperty<Job<?,?>> {
         private Id id = new Id();
 

@@ -1,9 +1,15 @@
 package org.jenkinsci.plugins.uniqueid;
 
 import hudson.ExtensionPoint;
+
 import jenkins.model.Jenkins;
 
+import java.io.UnsupportedEncodingException;
+import java.util.UUID;
+
 import javax.annotation.Nullable;
+
+import org.apache.commons.codec.binary.Base64;
 
 /**
  * An abstraction to persistently store and retrieve unique id's
@@ -11,6 +17,11 @@ import javax.annotation.Nullable;
  *
  * These keys are guaranteed to be unique with a Jenkins
  * and immutable across the lifetime of the given object.
+ * 
+ * Implementations should not store the ID inside any specific item configuration as it is
+ * common for users top copy items either through the UI or manually and this will cause the
+ * IDs to become non-unique.
+ * 
  *
  * @param <T>
  */
@@ -26,17 +37,19 @@ public abstract class IdStore<T> implements ExtensionPoint {
      * Creates an unique id for the given object.
      * Subsequent calls are idempotent.
      *
-     * @param object
+     * @param object the object to make the id for.
+     * @throws Exception if we could not store the unique ID for some reason.
      */
-    public abstract void make(T object);
+    public abstract void make(T object) throws Exception;
 
     /**
      * Get the id for this given object.
      * @param object
-     * @return the id or null if none assigned.
+     * @return the id or {@code null} if none assigned.
+     * @throws Exception if we could not retrieve the unique ID for some reason.
      */
     @Nullable
-    public abstract String get(T object);
+    public abstract String get(T object) throws Exception;
 
     public boolean supports(Class clazz) {
         return type.isAssignableFrom(clazz);
@@ -62,8 +75,9 @@ public abstract class IdStore<T> implements ExtensionPoint {
      * Convenience method which makes the id for the given object.
      *
      * @throws java.lang.IllegalArgumentException if the type is not supported.
+     * @throws Exception if we could not store the unique ID for some reason.
      */
-    public static void makeId(Object object) {
+    public static void makeId(Object object) throws IllegalArgumentException, Exception {
         IdStore store = forClass(object.getClass());
         if (store == null) {
             throw new IllegalArgumentException("Unsupported type: " + object.getClass().getName());
@@ -76,13 +90,30 @@ public abstract class IdStore<T> implements ExtensionPoint {
      * Convenience method which retrieves the id for the given object.
      *
      * @throws java.lang.IllegalArgumentException if the type is not supported.
+     * @throws Exception if we could not store the unique ID for some reason.
      */
-    public static String getId(Object object) {
+    public static String getId(Object object) throws IllegalArgumentException, Exception {
         IdStore store = forClass(object.getClass());
         if (store == null) {
             throw new IllegalArgumentException("Unsupported type: " + object.getClass().getName());
         } else {
             return store.get(object);
+        }
+    }
+
+    /**
+     * Generates a new unique ID.
+     * Subclasses do not need to use this to create unique IDs and are free to create IDs by other methods.
+     * @return a string that should be unique against all jenkins instances.
+     */
+    protected static String generateUniqueID() {
+        try {
+            return Base64.encodeBase64String(UUID.randomUUID().toString().getBytes("UTF-8")).substring(0, 30);
+        } catch (UnsupportedEncodingException e) {
+            // impossible condition
+            Error err = new InternalError("The JLS mandates UTF-8 yet it is not available on this JVM.  Your JVM is broken.");
+            err.initCause(e);
+            throw err;
         }
     }
 
