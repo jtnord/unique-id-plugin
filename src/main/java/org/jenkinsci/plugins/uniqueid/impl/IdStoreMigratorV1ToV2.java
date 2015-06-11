@@ -143,7 +143,7 @@ public class IdStoreMigratorV1ToV2 {
             // all done...
             final long duration = System.currentTimeMillis() - startTime;
             final long minutes = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startTime);
-            final long seconds = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startTime - TimeUnit.HOURS.toMillis(minutes));
+            final long seconds = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime - TimeUnit.MINUTES.toMillis(minutes));
 
             LOGGER.log(Level.INFO, "Finished unique-id migration of builds in {0} minutes {1} seconds.  Processed {2} runs from {3} jobs.", 
                        new Object[] {minutes, seconds,  migratedBuilds, migratedJobs});
