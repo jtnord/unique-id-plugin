@@ -6,6 +6,7 @@ import hudson.init.Initializer;
 import hudson.model.Item;
 import hudson.model.PersistenceRoot;
 import hudson.model.Job;
+import hudson.model.Run;
 
 import jenkins.model.Jenkins;
 
@@ -123,8 +124,13 @@ public class IdStoreMigratorV1ToV2 {
                 migratedJobs++;
                 if (job.getConfigFile().getFile().exists()) {
                     // we have not been deleted!
-                    for (Iterator iterator = job.getBuilds().iterator(); iterator.hasNext(); iterator.next()) {
+                    for (Iterator iterator = job.getBuilds().iterator(); iterator.hasNext();) {
                         // the build is migrated by the action in Id.onLoad(Run)
+                        // touch something in the build just to force loading incase it gets more lazy in the future.
+                        Object r = iterator.next();
+                        if (r != null && r instanceof Run) {
+                            ((Run)r).getResult();
+                        }
                         migratedBuilds++;
                     }
                 }
