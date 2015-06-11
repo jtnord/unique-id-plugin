@@ -9,7 +9,6 @@ import hudson.model.Job;
 import hudson.model.Run;
 
 import jenkins.model.Jenkins;
-import jenkins.util.io.FileBoolean;
 
 import java.io.File;
 import java.io.IOException;
