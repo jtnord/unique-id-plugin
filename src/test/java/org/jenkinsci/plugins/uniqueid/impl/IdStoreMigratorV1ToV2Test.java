@@ -8,6 +8,7 @@ import hudson.model.Run;
 import jenkins.model.Jenkins;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
 import org.jenkinsci.plugins.uniqueid.IdStore;
@@ -68,7 +69,7 @@ public class IdStoreMigratorV1ToV2Test {
         if (expectedID != null) {
             File f = new File(obj.getRootDir(), "config.xml");
             
-            String string = FileUtils.readFileToString(f, "UTF-8");
+            String string = FileUtils.readFileToString(f, StandardCharsets.UTF_8);
             // main config should not contain a reference to the unique ID any more.
             assertThat("config.xml for " + obj.toString() + " still contains the ID", string, not(containsString(expectedID)));
         }
@@ -79,7 +80,7 @@ public class IdStoreMigratorV1ToV2Test {
         if (expectedID != null) {
             File f = new File(obj.getRootDir(), "build.xml");
             
-            String string = FileUtils.readFileToString(f, "UTF-8");
+            String string = FileUtils.readFileToString(f, StandardCharsets.UTF_8);
             // main config should not contain a reference to the unique ID any more.
             assertThat("build.xml for " + obj.toString() + " still contains the ID", string, not(containsString(expectedID)));
         }

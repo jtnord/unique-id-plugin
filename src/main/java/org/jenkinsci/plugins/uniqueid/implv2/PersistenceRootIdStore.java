@@ -5,6 +5,7 @@ import hudson.model.PersistenceRoot;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -41,7 +42,7 @@ public class PersistenceRootIdStore extends IdStore<PersistenceRoot> {
             File tmp = null;
             try {
                 tmp = File.createTempFile(".unique-id_", ".tmp", object.getRootDir());
-                FileUtils.writeStringToFile(f, IdStore.generateUniqueID(), "UTF-8");
+                FileUtils.writeStringToFile(f, IdStore.generateUniqueID(), StandardCharsets.UTF_8);
                 try {
                     Files.move(tmp.toPath(), f.toPath(), StandardCopyOption.ATOMIC_MOVE);
                 }
@@ -61,7 +62,7 @@ public class PersistenceRootIdStore extends IdStore<PersistenceRoot> {
         File f = new File(object.getRootDir(), ID_FILE);
         if (f.exists() && f.canRead()) {
             try {
-                return FileUtils.readFileToString(f, "UTF-8");
+                return FileUtils.readFileToString(f, StandardCharsets.UTF_8);
             } catch (IOException ex) {
                 LOGGER.log(Level.WARNING, "Failed to retrieve unique ID for " + object.toString(), ex);
             }
@@ -75,7 +76,7 @@ public class PersistenceRootIdStore extends IdStore<PersistenceRoot> {
         if (!f.exists()) {
             LOGGER.log(Level.FINE, "Creating file ({1}) to store ID for ({0}) whose RootDir is ({2}).", new Object[] {object.toString(), f, object.getRootDir()});
             // no need to migrate if its there to begin with!
-            FileUtils.writeStringToFile(f, uniqueId, "UTF-8");
+            FileUtils.writeStringToFile(f, uniqueId, StandardCharsets.UTF_8);
         }
         else {
             LOGGER.log(Level.FINE, "**NOT** creating file ({1}) to store ID for ({0}) whose RootDir is ({2}).", new Object[] {object.toString(), f, object.getRootDir()});

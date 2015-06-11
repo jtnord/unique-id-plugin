@@ -5,6 +5,7 @@ import hudson.ExtensionPoint;
 import jenkins.model.Jenkins;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -103,14 +104,7 @@ public abstract class IdStore<T> implements ExtensionPoint {
      * @return a string that should be unique against all jenkins instances.
      */
     protected static String generateUniqueID() {
-        try {
-            return Base64.encodeBase64String(UUID.randomUUID().toString().getBytes("UTF-8")).substring(0, 30);
-        } catch (UnsupportedEncodingException e) {
-            // impossible condition
-            Error err = new InternalError("The JLS mandates UTF-8 yet it is not available on this JVM.  Your JVM is broken.");
-            err.initCause(e);
-            throw err;
-        }
+        return Base64.encodeBase64String(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8)).substring(0, 30);
     }
 
 }
