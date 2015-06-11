@@ -9,6 +9,7 @@ import hudson.model.Job;
 import hudson.model.Run;
 
 import jenkins.model.Jenkins;
+import jenkins.util.io.FileBoolean;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,7 +50,7 @@ public class IdStoreMigratorV1ToV2 {
         }
         File marker = new File(jenkins.getRootDir(), MARKER_FILE_NAME);
         if (marker.exists()) {
-            LOGGER.log(Level.INFO, "Migration of IDStore already performed, so skipping migration.");
+            LOGGER.log(Level.FINE, "Migration of IDStore already performed, so skipping migration.");
             return;
         }
         LOGGER.log(Level.INFO, "Starting migration of IDs");
@@ -80,7 +81,7 @@ public class IdStoreMigratorV1ToV2 {
     }
 
    static void migrate(PersistenceRoot pr) {
-       LOGGER.log(Level.FINE, "migrating {0}" , pr.toString());
+       LOGGER.log(Level.FINE, "migrating {0}" , pr);
        try {
             String id = LegacyIdStore.getId(pr);
             if (id != null) {
@@ -129,7 +130,7 @@ public class IdStoreMigratorV1ToV2 {
                         // touch something in the build just to force loading incase it gets more lazy in the future.
                         Object r = iterator.next();
                         if (r != null && r instanceof Run) {
-                            ((Run)r).getResult();
+                            ((Run)r).getAllActions();
                         }
                         migratedBuilds++;
                     }
