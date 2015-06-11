@@ -8,7 +8,7 @@ import hudson.model.Run;
 import org.jenkinsci.plugins.uniqueid.IdStore;
 
 /**
- * Stores id's for runs as an action on the Run.
+ * Manages Unique IDs for Runs.
  */
 @Extension(ordinal=1) // needs to take priority over the PersistenceRootIdStore
 public class RunIdStore extends IdStore<Run> {
@@ -25,9 +25,9 @@ public class RunIdStore extends IdStore<Run> {
 
     @Override
     public String get(Run run) throws IllegalArgumentException, Exception {
-        IdStore<PersistenceRoot> persistanceStore = IdStore.forClass(PersistenceRoot.class);
+        IdStore<PersistenceRoot> persistenceStore = IdStore.forClass(PersistenceRoot.class);
         
-        String id = persistanceStore.get(run);
+        String id = persistenceStore.get(run);
         if (id != null) {
             // migrated legacy id
             return id;
