@@ -5,11 +5,15 @@ import hudson.ExtensionPoint;
 import jenkins.model.Jenkins;
 
 import java.io.UnsupportedEncodingException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.UUID;
+import javax.annotation.CheckForNull;
 
 import javax.annotation.Nullable;
 
 import org.apache.commons.codec.binary.Base64;
+import org.jenkinsci.plugins.uniqueid.impl.LegacyIdStore;
 
 /**
  * An abstraction to persistently store and retrieve unique id's
@@ -70,6 +74,23 @@ public abstract class IdStore<T> implements ExtensionPoint {
         }
         return null;
     }
+    
+    /**
+     * Retrieve all {@link IdStore}s for the given type.
+     * @param clazz Class
+     * @param <C> type of {@link IdStore}s
+     * @return A list of all matching {@link IdStore}s
+     */
+    @CheckForNull
+    public static <C> List<IdStore<C>> allForClass(Class<C> clazz) {
+        List<IdStore<C>> res = new LinkedList<IdStore<C>>();
+        for (IdStore store : Jenkins.getInstance().getExtensionList(IdStore.class)) {
+            if (store.supports(clazz)) {
+                res.add((IdStore<C>)store);
+            }
+        }
+        return res;
+    }
 
     /**
      * Convenience method which makes the id for the given object.
@@ -93,12 +114,23 @@ public abstract class IdStore<T> implements ExtensionPoint {
      * @throws Exception if we could not store the unique ID for some reason.
      */
     public static String getId(Object object) throws IllegalArgumentException, Exception {
-        IdStore store = forClass(object.getClass());
-        if (store == null) {
-            throw new IllegalArgumentException("Unsupported type: " + object.getClass().getName());
-        } else {
-            return store.get(object);
+        @CheckForNull String result;
+        LegacyIdStore legacyStore = null;
+        
+        final Class<?> objectClass = object.getClass();
+        final IdStore store = forClass(objectClass);
+        result = store != null ? store.get(object) : null;
+          
+        if (result == null) {// Try old store if it has not been migrated yet
+            legacyStore = LegacyIdStore.forClass(objectClass); 
+            result = legacyStore != null ? legacyStore.get(object) : null;
         }
+        
+        if (store == null && legacyStore == null) {
+            throw new IllegalArgumentException("Unsupported type: " + object.getClass().getName());
+        }
+        
+        return result;
     }
 
     /**

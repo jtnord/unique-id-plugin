@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 
 import org.apache.commons.io.FileUtils;
 import org.jenkinsci.plugins.uniqueid.IdStore;
+import org.jenkinsci.plugins.uniqueid.impl.LegacyIdStore;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 
@@ -34,8 +35,23 @@ public class PersistenceRootIdStore extends IdStore<PersistenceRoot> {
     public void make(PersistenceRoot object) {
         File f = new File(object.getRootDir(), ID_FILE);
         if (!f.exists()) {
+            // Retrieve Id 
+            String id = null;
             try {
-                FileUtils.writeStringToFile(f, IdStore.generateUniqueID(), "UTF-8");
+                id = LegacyIdStore.getId(object);
+            } catch (IllegalArgumentException ex) {
+                // do nothing;
+            }
+            
+            if (id == null) {
+                LOGGER.log(Level.FINE, "Generating new unique id for {0}", object);
+                id = IdStore.generateUniqueID();
+            } else {
+                LOGGER.log(Level.FINE, "Reusing the legacy id {0} for {1}", new Object[]{id, object});
+            }
+                
+            try {
+                FileUtils.writeStringToFile(f, id, "UTF-8");
             } catch (IOException ex) {
                 LOGGER.log(Level.WARNING, "Failed to store unique ID for " + object.toString(), ex);
             }
