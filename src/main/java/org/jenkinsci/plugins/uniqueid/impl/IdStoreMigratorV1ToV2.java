@@ -6,14 +6,14 @@ import hudson.init.Initializer;
 import hudson.model.Item;
 import hudson.model.PersistenceRoot;
 import hudson.model.Job;
-import hudson.model.Run;
-import hudson.util.RunList;
 
 import jenkins.model.Jenkins;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,6 +32,8 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
 public class IdStoreMigratorV1ToV2 {
     
     private static Logger LOGGER = Logger.getLogger(IdStoreMigratorV1ToV2.class.getName());
+
+    private static final String MARKER_FILE_NAME = "unique-id-migration.txt";
     
     /**
      * Migrates any IDs stored in Folder/Job/Run configuration 
@@ -44,21 +46,15 @@ public class IdStoreMigratorV1ToV2 {
         if (jenkins == null) {
             throw new IllegalStateException("Jenkins is null, so it is impossible to migrate the IDs");
         }
-        File marker = new File(jenkins.getRootDir(), "unique-id-migration.txt");
+        File marker = new File(jenkins.getRootDir(), MARKER_FILE_NAME);
         if (marker.exists()) {
-            LOGGER.log(Level.INFO, "Migration of IDStore already perfomed, so skipping migration.");
+            LOGGER.log(Level.INFO, "Migration of IDStore already performed, so skipping migration.");
             return;
         }
         LOGGER.log(Level.INFO, "Starting migration of IDs");
 
         performMigration(jenkins);
 
-        LOGGER.log(Level.INFO, "Finished migration of IDs");
-        if (!marker.createNewFile()) {
-            throw new IOException("Failed to record the completion of the IDStore Migration.  " + 
-                                  "This will cause performance issues on subsequent startup.  " + 
-                                  "Please create an empty file at '" + marker.getCanonicalPath() + "'");
-        }
     }
 
     @SuppressWarnings("unchecked")
@@ -74,19 +70,15 @@ public class IdStoreMigratorV1ToV2 {
                 LOGGER.log(Level.WARNING, "Expected item of type Folder or Job which implement PersistenceRoot, but got a {0} so can not migrate the IdStore for this item",
                            item.getClass().getName());
             }
-
-            if (item instanceof Job) {
-                // need to migrate the RunIDs if they exist.
-                Job<? extends Job, ? extends Run> job = (Job<? extends Job, ? extends Run>) item;
-                RunList<? extends Run> builds = job.getBuilds();
-                for (Run build : builds) {
-                    migrate(build);
-                }
-            }
         }
+        LOGGER.log(Level.INFO, "migration of unique IDs for Jobs and Folders complete - will continue to process Runs in the background.");
+
+        Thread t = new Thread(new RunIDMigrationThread(), "unique-id background migration thread");
+        t.setDaemon(true);
+        t.start();
     }
 
-   private static void migrate(PersistenceRoot pr) {
+   static void migrate(PersistenceRoot pr) {
        LOGGER.log(Level.FINE, "migrating {0}" , pr.toString());
        try {
             String id = LegacyIdStore.getId(pr);
@@ -105,9 +97,64 @@ public class IdStoreMigratorV1ToV2 {
     * Exception to indicate a failure to migrate the IDStore.
     */
    private static class IDStoreMigrationException extends RuntimeException {
-       
+
        public IDStoreMigrationException(String message, Throwable cause) {
            super(message,cause);
        }
    }
+   
+    private static class RunIDMigrationThread implements Runnable {
+
+        public void run() {
+            Jenkins jenkins = Jenkins.getInstance();
+            if (jenkins == null) {
+                throw new IllegalStateException("Jenkins is null, so it is impossible to migrate the IDs");
+            }
+            // if new jobs are added that is ok - as their runs will not need to be migrated.
+            // if jobs are deleted from Jenkins we need to handle that fact!
+            List<Job> allJobs = jenkins.getAllItems(Job.class);
+            int totalJobs = allJobs.size();
+            int migratedJobs = 0;
+            int migratedBuilds = 0;
+            final long startTime = System.currentTimeMillis();
+            long lastLog = System.currentTimeMillis();
+            for (Job job : allJobs) {
+                // Force the loading of the builds.
+                migratedJobs++;
+                if (job.getConfigFile().getFile().exists()) {
+                    // we have not been deleted!
+                    for (Iterator iterator = job.getBuilds().iterator(); iterator.hasNext(); iterator.next()) {
+                        // the build is migrated by the action in Id.onLoad(Run)
+                        migratedBuilds++;
+                    }
+                }
+                if ((System.currentTimeMillis() - lastLog) > (60 * 1000L) ) {
+                    lastLog = System.currentTimeMillis();
+                    LOGGER.log(Level.INFO, "Processed {0} builds,  and have inspected all runs from {1} out of {2} jobs.", 
+                               new Object[] {migratedBuilds, migratedJobs, totalJobs});
+                }
+            }
+            // all done...
+            final long duration = System.currentTimeMillis() - startTime;
+            final long minutes = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startTime);
+            final long seconds = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startTime - TimeUnit.HOURS.toMillis(minutes));
+
+            LOGGER.log(Level.INFO, "Finished unique-id migration of builds in {0} minutes {1} seconds.  Processed {2} runs from {3} jobs.", 
+                       new Object[] {minutes, seconds,  migratedBuilds, migratedJobs});
+            File marker = new File(jenkins.getRootDir(), MARKER_FILE_NAME);
+            try {
+                if (!marker.createNewFile()) {
+                    LOGGER.log(Level.WARNING, "Failed to record the completion of the IDStore Migration.  " + 
+                                      "This will cause performance issues on subsequent startup.  " + 
+                                      "Please create an empty file at '" + marker.getCanonicalPath() + "'");
+                }
+            }
+            catch (IOException ex) {
+                LOGGER.log(Level.WARNING, "Failed to record the completion of the IDStore Migration.  " + 
+                                                "This will cause performance issues on subsequent startup.  " + 
+                                                "Please create an empty file in the Jenkins home directory called  '" + MARKER_FILE_NAME + "'.", ex);
+            }
+        }
+    }
+
 }

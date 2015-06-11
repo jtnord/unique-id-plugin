@@ -38,18 +38,16 @@ public abstract class IdStore<T> implements ExtensionPoint {
      * Subsequent calls are idempotent.
      *
      * @param object the object to make the id for.
-     * @throws Exception if we could not store the unique ID for some reason.
      */
-    public abstract void make(T object) throws Exception;
+    public abstract void make(T object);
 
     /**
      * Get the id for this given object.
      * @param object
      * @return the id or {@code null} if none assigned.
-     * @throws Exception if we could not retrieve the unique ID for some reason.
      */
     @Nullable
-    public abstract String get(T object) throws Exception;
+    public abstract String get(T object);
 
     public boolean supports(Class clazz) {
         return type.isAssignableFrom(clazz);
@@ -75,9 +73,8 @@ public abstract class IdStore<T> implements ExtensionPoint {
      * Convenience method which makes the id for the given object.
      *
      * @throws java.lang.IllegalArgumentException if the type is not supported.
-     * @throws Exception if we could not store the unique ID for some reason.
      */
-    public static void makeId(Object object) throws IllegalArgumentException, Exception {
+    public static void makeId(Object object) throws IllegalArgumentException {
         IdStore store = forClass(object.getClass());
         if (store == null) {
             throw new IllegalArgumentException("Unsupported type: " + object.getClass().getName());
@@ -90,9 +87,8 @@ public abstract class IdStore<T> implements ExtensionPoint {
      * Convenience method which retrieves the id for the given object.
      *
      * @throws java.lang.IllegalArgumentException if the type is not supported.
-     * @throws Exception if we could not store the unique ID for some reason.
      */
-    public static String getId(Object object) throws IllegalArgumentException, Exception {
+    public static String getId(Object object) throws IllegalArgumentException {
         IdStore store = forClass(object.getClass());
         if (store == null) {
             throw new IllegalArgumentException("Unsupported type: " + object.getClass().getName());

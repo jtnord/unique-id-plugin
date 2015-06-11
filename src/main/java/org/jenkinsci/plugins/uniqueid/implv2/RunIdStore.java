@@ -17,14 +17,14 @@ public class RunIdStore extends IdStore<Run> {
     }
 
     @Override
-    public void make(Run run) throws IllegalArgumentException, Exception {
+    public void make(Run run) {
         // we calculate these on the fly, or serve up migrated IDs if they exist.
         // in order to calculate on the fly we require the parent to have an id.
         IdStore.makeId(run.getParent());
     }
 
     @Override
-    public String get(Run run) throws IllegalArgumentException, Exception {
+    public String get(Run run) {
         IdStore<PersistenceRoot> persistenceStore = IdStore.forClass(PersistenceRoot.class);
         
         String id = persistenceStore.get(run);

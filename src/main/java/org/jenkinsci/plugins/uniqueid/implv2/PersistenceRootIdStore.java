@@ -5,6 +5,9 @@ import hudson.model.PersistenceRoot;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -12,6 +15,7 @@ import org.apache.commons.io.FileUtils;
 import org.jenkinsci.plugins.uniqueid.IdStore;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
+
 
 /**
  * The {@link PersistenceRootIdStore} allows the storing of a Unique ID for any PersistenceRoot item. This replaces the
@@ -34,9 +38,19 @@ public class PersistenceRootIdStore extends IdStore<PersistenceRoot> {
     public void make(PersistenceRoot object) {
         File f = new File(object.getRootDir(), ID_FILE);
         if (!f.exists()) {
+            File tmp = null;
             try {
+                tmp = File.createTempFile(".unique-id_", ".tmp", object.getRootDir());
                 FileUtils.writeStringToFile(f, IdStore.generateUniqueID(), "UTF-8");
-            } catch (IOException ex) {
+                try {
+                    Files.move(tmp.toPath(), f.toPath(), StandardCopyOption.ATOMIC_MOVE);
+                }
+                catch (FileAlreadyExistsException ignored) {
+                    FileUtils.deleteQuietly(tmp);
+                    return; // we already have an id.
+                }
+            } 
+            catch (IOException ex) {
                 LOGGER.log(Level.WARNING, "Failed to store unique ID for " + object.toString(), ex);
             }
         }

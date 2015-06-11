@@ -3,7 +3,6 @@ package org.jenkinsci.plugins.uniqueid;
 import com.cloudbees.hudson.plugins.folder.Folder;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.Job;
 import hudson.model.Project;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,9 +23,14 @@ public class IdTest {
         String id = IdStore.getId(p);
         AbstractBuild build = jenkinsRule.buildAndAssertSuccess(p);
 
-        assertNull(IdStore.getId(build));
-        IdStore.makeId(build);
+        // a build will get an id computed from its parent.
         String buildId = IdStore.getId(build);
+        assertEquals(buildId, id+"_1");
+
+        // should be a no-op
+        IdStore.makeId(build);
+        assertEquals(IdStore.getId(build), buildId);
+
         jenkinsRule.jenkins.reload();
 
         AbstractProject resurrectedProject = jenkinsRule.jenkins.getItemByFullName(p.getFullName(), AbstractProject.class);
