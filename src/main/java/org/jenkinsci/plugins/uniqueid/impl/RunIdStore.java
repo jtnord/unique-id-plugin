@@ -26,10 +26,10 @@ public class RunIdStore extends LegacyIdStore<Run> {
 
     @Override
     public void remove(Run run) throws IOException {
-        List<Action> allActions = run.getActions();
+        List<Action> actionList = run.getActions();
         List<Id> ids = run.getActions(Id.class);
         if (!ids.isEmpty()) {
-            allActions.removeAll(ids);
+            actionList.removeAll(ids);
             run.save();
         }
     }
